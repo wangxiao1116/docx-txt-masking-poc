@@ -38,11 +38,11 @@ test("真实上传、预览、导出、删除和刷新持久化链路", async ({
   await page.getByRole("link", { name: "下载脱敏文件" }).click();
   expect((await download).suggestedFilename()).toContain("sample_labeled_masked");
 
-  const csv = await request.get("http://127.0.0.1:8000/api/v1/exports/manifest.csv");
+  const csv = await request.get("/api/v1/exports/manifest.csv");
   expect(csv.ok()).toBeTruthy();
   expect(await csv.text()).toContain("sample_labeled.txt");
 
-  const zip = await request.get("http://127.0.0.1:8000/api/v1/exports/results.zip");
+  const zip = await request.get("/api/v1/exports/results.zip");
   expect(zip.ok()).toBeTruthy();
   const zipBody = await zip.body();
   expect(zipBody.includes(Buffer.from("处理清单.csv"))).toBeTruthy();

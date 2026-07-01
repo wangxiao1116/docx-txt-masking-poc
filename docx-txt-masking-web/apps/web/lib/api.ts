@@ -1,9 +1,14 @@
 import type { ApiResponse, EntityRecord, FileListPayload, FileTask, FileTaskDetail } from "@/types/api";
 
-export const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
+export const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+
+function apiUrl(path: string) {
+  const base = API_BASE.replace(/\/$/, "");
+  return `${base}/api/v1${path}`;
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
+  const response = await fetch(apiUrl(path), {
     ...init,
     cache: "no-store",
   });
@@ -43,13 +48,13 @@ export async function deleteFile(id: string) {
 }
 
 export function downloadUrl(id: string) {
-  return `${API_BASE}/files/${id}/download`;
+  return apiUrl(`/files/${id}/download`);
 }
 
 export function manifestUrl() {
-  return `${API_BASE}/exports/manifest.csv`;
+  return apiUrl("/exports/manifest.csv");
 }
 
 export function zipUrl() {
-  return `${API_BASE}/exports/results.zip`;
+  return apiUrl("/exports/results.zip");
 }
