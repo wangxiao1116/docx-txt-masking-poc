@@ -1,0 +1,97 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r docx-txt-masking-web/apps/api/requirements.txt
+      - run: python -m pytest
+        working-directory: docx-txt-masking-web
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: docx-txt-masking-web/apps/web/package-lock.json
+      - run: npm ci
+        working-directory: docx-txt-masking-web/apps/web
+      - run: npm run lint
+        working-directory: docx-txt-masking-web/apps/web
+      - run: npm run build
+        working-directory: docx-txt-masking-web/apps/web
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [api, web]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: docx-txt-masking-web/apps/web/package-lock.json
+      - run: pip install -r apps/api/requirements.txt
+        working-directory: docx-txt-masking-web
+      - run: npm ci
+        working-directory: docx-txt-masking-web/apps/web
+      - run: npx playwright install --with-deps chromium
+        working-directory: docx-txt-masking-web/apps/web
+      - name: Start FastAPI
+        run: |
+          PYTHONPATH=apps/api nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > api.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:8000/api/v1/health && exit 0
+            sleep 1
+          done
+          cat api.log
+          exit 1
+        working-directory: docx-txt-masking-web
+      - name: Start Next.js
+        run: |
+          nohup npm run dev > web.log 2>&1 &
+          for i in {1..60}; do
+            curl -fsS http://127.0.0.1:3000 && exit 0
+            sleep 1
+          done
+          cat web.log
+          exit 1
+        working-directory: docx-txt-masking-web/apps/web
+        env:
+          NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:8000/api/v1
+      - run: python scripts/generate-sample-data.py
+        working-directory: docx-txt-masking-web
+      - run: npm run e2e
+        working-directory: docx-txt-masking-web/apps/web
+        env:
+          NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:8000/api/v1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: |
+            docx-txt-masking-web/apps/web/playwright-report
+            docx-txt-masking-web/apps/web/test-results
+            docx-txt-masking-web/api.log
+            docx-txt-masking-web/apps/web/web.log
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose build
+        working-directory: docx-txt-masking-web

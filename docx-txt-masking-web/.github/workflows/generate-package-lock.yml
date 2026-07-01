@@ -1,0 +1,20 @@
+name: generate-package-lock
+
+on:
+  workflow_dispatch:
+
+jobs:
+  package-lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Generate package-lock.json
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+        working-directory: docx-txt-masking-web/apps/web
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-package-lock
+          path: docx-txt-masking-web/apps/web/package-lock.json
