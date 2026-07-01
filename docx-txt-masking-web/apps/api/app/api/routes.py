@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response
@@ -32,12 +33,22 @@ def task_out(task: FileTask) -> dict:
     return FileTaskOut.model_validate(task).model_dump(mode="json")
 
 
+def json_field(value: str | None, fallback: Any) -> Any:
+    if not value:
+        return fallback
+    try:
+        return json.loads(value)
+    except json.JSONDecodeError:
+        return fallback
+
+
 def task_detail(task: FileTask) -> dict:
-    data = FileTaskDetail.model_validate(task).model_dump(mode="json")
-    data["verification"] = json.loads(task.verification_json or "{}")
-    data["mappings"] = json.loads(task.mappings_json or "[]")
-    data["metadata"] = json.loads(task.metadata_json or "{}")
-    return data
+    data = FileTaskOut.model_validate(task).model_dump()
+    data["entities"] = [EntityOut.model_validate(item).model_dump() for item in task.entities]
+    data["verification"] = json_field(task.verification_json, {})
+    data["mappings"] = json_field(task.mappings_json, [])
+    data["metadata"] = json_field(task.metadata_json, {})
+    return FileTaskDetail.model_validate(data).model_dump(mode="json")
 
 
 def error_response(code: int, message: str, status_code: int = 400) -> Response:

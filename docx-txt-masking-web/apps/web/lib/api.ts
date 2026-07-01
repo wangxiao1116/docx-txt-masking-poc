@@ -7,12 +7,32 @@ function apiUrl(path: string) {
   return `${base}/api/v1${path}`;
 }
 
+async function readPayload<T>(response: Response): Promise<ApiResponse<T>> {
+  const text = await response.text();
+  if (!text) {
+    return {
+      code: response.ok ? 0 : response.status,
+      message: response.statusText || "Request failed",
+      data: null as T,
+    };
+  }
+  try {
+    return JSON.parse(text) as ApiResponse<T>;
+  } catch {
+    return {
+      code: response.status || 500,
+      message: text || response.statusText || "Request failed",
+      data: null as T,
+    };
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(apiUrl(path), {
     ...init,
     cache: "no-store",
   });
-  const payload = (await response.json()) as ApiResponse<T>;
+  const payload = await readPayload<T>(response);
   if (!response.ok || payload.code !== 0) {
     throw new Error(payload.message || "请求失败");
   }

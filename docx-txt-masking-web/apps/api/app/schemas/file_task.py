@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ApiResponse(BaseModel):
@@ -51,7 +51,7 @@ class FileTaskOut(BaseModel):
 
 
 class FileTaskDetail(FileTaskOut):
-    entities: list[EntityOut] = []
-    verification: dict[str, Any] = {}
-    mappings: list[dict[str, Any]] = []
-    metadata: dict[str, Any] = {}
+    entities: list[EntityOut] = Field(default_factory=list)
+    verification: dict[str, Any] = Field(default_factory=dict)
+    mappings: list[dict[str, Any]] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)

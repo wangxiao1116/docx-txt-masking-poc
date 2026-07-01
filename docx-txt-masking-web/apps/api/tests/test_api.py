@@ -98,6 +98,23 @@ def test_txt_upload_process_and_no_entity_status():
     assert clean.json()["data"]["verification_status"] == "未通过"
 
 
+def test_file_detail_and_previews_return_200_for_txt_and_docx():
+    _reset_state()
+    client = TestClient(app)
+
+    txt_task = _upload(client, "detail.txt", f"ID {VALID_ID}".encode("utf-8")).json()["data"]
+    docx_task = _upload(client, "detail.docx", _docx_bytes(f"ID {VALID_ID}")).json()["data"]
+
+    for task in [txt_task, docx_task]:
+        detail = client.get(f"/api/v1/files/{task['id']}")
+        original_preview = client.get(f"/api/v1/files/{task['id']}/preview/original")
+        masked_preview = client.get(f"/api/v1/files/{task['id']}/preview/masked")
+
+        assert detail.status_code == 200
+        assert original_preview.status_code == 200
+        assert masked_preview.status_code == 200
+
+
 def test_txt_label_is_saved_as_task_metadata_not_file_body():
     _reset_state()
     client = TestClient(app)
