@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -6,7 +6,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../../../..");
 const sampleDir = path.join(repoRoot, "sample-data");
 
-async function uploadFile(page, fileName: string) {
+async function uploadFile(page: Page, fileName: string) {
   await page.locator("#file").setInputFiles(path.join(sampleDir, fileName));
   await page.getByLabel("分类编码").fill("A1-1");
   await page.getByLabel("分类名称").fill("个人信息");
